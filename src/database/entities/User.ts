@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm"
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm"
+import { Token } from "./token";
 
 @Entity()
 export class User{
@@ -10,11 +11,24 @@ export class User{
     username: string;
 
     @Column()
+    email: string;
+
+    @Column()
     password: string;
 
-    constructor(id: number, username: string, password: string){
+    @Column()
+    role: string;
+
+    @OneToMany(() => Token, token => token.user)
+    tokens: Token[];
+
+    constructor(id: number, username: string,email: string, password: string, role: string, tokens: Token[]){
         this.id = id;
         this.username = username;
+        this.email = email;
         this.password = password;
+        this.role = role;
+        this.tokens = tokens;
     }
+
 }

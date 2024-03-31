@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm"
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from "typeorm"
 import { Token } from "./token";
+import { Role } from "./roles";
 
 @Entity()
 export class User{
@@ -16,19 +17,20 @@ export class User{
     @Column()
     password: string;
 
-    @Column()
-    role: string;
-
     @OneToMany(() => Token, token => token.user)
     tokens: Token[];
 
-    constructor(id: number, username: string,email: string, password: string, role: string, tokens: Token[]){
+    @ManyToMany(() => Role)
+    @JoinTable()
+    roles: Role[];
+
+    constructor(id: number, username: string,email: string, password: string, tokens: Token[], roles: Role[]){
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
-        this.role = role;
         this.tokens = tokens;
+        this.roles = roles;
     }
 
 }

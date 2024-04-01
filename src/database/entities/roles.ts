@@ -12,12 +12,12 @@ export class Role{
     name: String;
 
     @ManyToMany(() => User, user => user.roles)@JoinTable()
-        users: User[];
+        user: User[];
     
 
-    constructor(id: number, name: String, users: User[] = []) {
+    constructor(id: number, name: String, users: User[]) {
         this.id = id;
         this.name = name;
-        this.users = users;
+        this.user = users;
     }
 }

@@ -10,7 +10,16 @@ export const createUserValidation = Joi.object<createUserValidationRequest>({
     username: Joi.string().alphanum().min(5).max(20).required(),
     email: Joi.string().email().required(),
     password: Joi.string().min(8).required()
-})
+}).options({abortEarly:false});
 // User authentification valid
 
+export interface loginUserValidationRequest {
+    username: string;
+    password: string;
+}
+
+export const loginUserValidation = Joi.object<loginUserValidationRequest>({
+    username: Joi.string().required(),
+    password: Joi.string().required()
+}).options({abortEarly: false});
 // User logout

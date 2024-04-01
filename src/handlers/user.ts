@@ -1,9 +1,11 @@
 import  express, { Request, Response } from "express";
 import { AppDataSource } from "../database/database";
-import { createUserValidation } from "./validators/user-validator";
+import { createUserValidation, loginUserValidation } from "./validators/user-validator";
 import { generateValidationErrorMessage } from "./validators/generate-validation-message";
 import { User } from "../database/entities/user";
-import { hash } from "bcrypt";
+import { compare, hash } from "bcrypt";
+import { sign } from "jsonwebtoken";
+import { Token } from "../database/entities/token";
 
 
 export const UserHandler = (app: express.Express) => {
@@ -28,6 +30,40 @@ export const UserHandler = (app: express.Express) => {
 
         } catch (error) {
             console.log(error);
+            res.status(500).send({ "error": "internal error retry later" });
+            return;
         }
-    })
+    });
+    // Connexion d'un utilisateur
+    app.post('/auth/login', async(req:Request, res: Response) => {
+        try {
+            const userValidation = loginUserValidation.validate(req.body);
+            if(userValidation.error){
+                res.status(400).send(generateValidationErrorMessage(userValidation.error.details));
+                return;
+            }
+            const loginUserRequest = userValidation.value;
+            const user = await AppDataSource.getRepository(User).findOneBy({username: loginUserRequest.username});
+            if (!user) {
+                res.status(400).send({ error: " Le premier username or password not valid" })
+                return
+            }
+            // valid password for this user
+            const isValid = await compare(loginUserRequest.password, user.password);
+            if (!isValid) {
+                res.status(400).send({ error: "Le username or password not valid" })
+                return
+            }
+            const secret = process.env.JWT_SECRET ?? ""
+            console.log(secret)
+            const token = sign({ userId: user.id, username: user.username }, secret, { expiresIn: '1d' });
+            await AppDataSource.getRepository(Token).save({ token: token, user: user })
+            res.status(200).json({ token });
+        } catch (error) {
+            
+            console.log(error);
+            res.status(500).send({ "error": "internal error retry later" });
+            return;
+        }
+    });
 }

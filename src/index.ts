@@ -1,6 +1,7 @@
 import express from "express";
 import { initRoutes } from "./handlers/routes";
 import { AppDataSource } from "./database/database";
+import 'dotenv/config';
 import "reflect-metadata"
 
 const main = async () => {

@@ -23,3 +23,15 @@ export const loginUserValidation = Joi.object<loginUserValidationRequest>({
     password: Joi.string().required()
 }).options({abortEarly: false});
 // User logout
+
+// Liste utilisateurs
+
+export interface userListValidationRequest {
+    page: number;
+    result: number;
+}
+
+export const userListValidation = Joi.object<userListValidationRequest>({
+    page: Joi.number().min(1).optional(),
+    result: Joi.number().min(1).optional()
+})

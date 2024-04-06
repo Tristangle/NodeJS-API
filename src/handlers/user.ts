@@ -6,6 +6,7 @@ import { User } from "../database/entities/user";
 import { compare, hash } from "bcrypt";
 import { sign } from "jsonwebtoken";
 import { Token } from "../database/entities/token";
+import { getRepository } from "typeorm";
 
 
 export const UserHandler = (app: express.Express) => {
@@ -60,10 +61,21 @@ export const UserHandler = (app: express.Express) => {
             await AppDataSource.getRepository(Token).save({ token: token, user: user })
             res.status(200).json({ token });
         } catch (error) {
-            
+
             console.log(error);
             res.status(500).send({ "error": "internal error retry later" });
             return;
         }
     });
+    app.delete('/logout', async(req: Request, res: Response) => {
+        try {
+            // Delete la ligne avec le token dans la db
+            res.status(201).send({message : "Déconnexion réussie"});
+           
+        } catch (error) {
+            console.log(error);
+            res.status(500).send({ "error": "internal error retry later" });
+            return;
+        }
+    })
 }

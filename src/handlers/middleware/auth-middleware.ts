@@ -9,31 +9,27 @@ export const authMiddleware = async(req: Request, res: Response, next: NextFunct
     // Récupérer la valeur du token donné
     const tokenRepository = AppDataSource.getRepository(Token);
     const authToken = req.headers.authorization;
-
+    console.log(authToken);
     
         // Vérifier si le token est null ou vide
         if(!authToken){
             // Redirection page login
-            return res.status(401).json({"error": "Unauthorized"});
+            return res.status(401).json({"error": "Unauthorized token nul ou vide"});
         }
-        const token = authToken!.split(' ')[1];
-
+        const token = authToken.replace(/"/g, '').split(' ')[1];
+        // Vérifier si le token correspond à un utilisateur
+        const tokenFound = await tokenRepository.findOne({where: {token}});
+        if(!tokenFound){
+            return res.status(401).json({"error": "Token non trouvé dans la db"})
+        }
         // Verify
-        const verifiedToken = verify(token, 'apinodejs',(err,user)=>{
-            if (err) return res.status(403).json({"error": "Access Forbidden"});
+        const secret = process.env.JWT_SECRET ?? "";
+        verify(token,secret,(err,user)=>{
+            console.log(err);            
+            if (err) return res.status(403).json({"error": "Access Forbidden token non valide pour la vérif"});
             (req as any).user = user;
             next();
         });
-        const tokenVerified = await tokenRepository.findOne({where: {token}, relations:["user"] });
-        const tokenRole = tokenVerified?.user.roles;
-        if(verifiedToken === null){
-            return res.status(401).json({"error": "Unauthorized"});
-        }
-        // Vérifier si le token existe
-        
-        if(!tokenVerified){
-            return res.status(401).json({"error": "Unauthorized"});
-        }
 }
 
 

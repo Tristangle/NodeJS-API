@@ -2,11 +2,11 @@ import  express, { Request, Response } from "express";
 import { AppDataSource } from "../database/database";
 import { createUserValidation, loginUserValidation } from "./validators/user-validator";
 import { generateValidationErrorMessage } from "./validators/generate-validation-message";
-import { User } from "../database/entities/user";
 import { compare, hash } from "bcrypt";
 import { sign } from "jsonwebtoken";
 import { Token } from "../database/entities/token";
 import { getRepository } from "typeorm";
+import { User } from "../database/entities/user";
 
 
 export const UserHandler = (app: express.Express) => {

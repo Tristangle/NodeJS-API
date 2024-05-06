@@ -1,5 +1,6 @@
 import { Column, Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Salle } from "./salle";
+import { Film } from "./film";
 
 @Entity()
 export class Seance{
@@ -16,10 +17,10 @@ export class Seance{
     @ManyToOne(() => Salle, salle => salle.seances)
     salle: Salle;
 
-    @Column()
-    film: string;
+    @ManyToOne(() => Film, film => film.seances)
+    film: Film;
 
-    constructor(id: number, salle: Salle, dateDebut:Date, dateFin:Date, film:string) {
+    constructor(id: number, salle: Salle, dateDebut:Date, dateFin:Date, film:Film) {
         this.id = id;
         this.dateDebut = dateDebut;
         this.dateFin = dateFin;

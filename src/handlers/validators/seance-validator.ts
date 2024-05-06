@@ -1,20 +1,24 @@
 import Joi from "joi";
 import { Salle } from "../../database/entities/salle";
+import { Film } from "../../database/entities/film";
 
 export interface SeanceRequest{
-    idSalle : number,
+    salle : Salle,
     dateDebut: Date,
-    dateFin: Date,
-    film: string,
+    film: Film,
 }
 
 export const seanceValidation = Joi.object<SeanceRequest>({
-    idSalle: Joi.number().required(),
+    salle: Joi.object<Salle>({
+        id: Joi.number().required(),
+    }).required(),
     dateDebut: Joi.date().required(),
-    film: Joi.string().required()
+    film: Joi.object<Salle>({
+        id: Joi.number().required(),
+    }).required()
 }).options({ abortEarly: false })
 
-export interface SeanceIdRequest {
+export interface SeanceIdRequest { 
     id: number
 }
 
@@ -35,12 +39,12 @@ export interface ListSeanceRequest {
 
 export const updateSeanceValidation = Joi.object<UpdateSeanceRequest>({
     id: Joi.number().required(),
-    date: Joi.date().optional(),
-    film: Joi.string().min(1).optional()
+    dateDebut: Joi.date().optional(),
+    idFilm: Joi.number().optional()
 })
 
 export interface UpdateSeanceRequest {
     id: number
-    date?: Date
-    film?:boolean
+    dateDebut?: Date
+    idFilm?:number
 }

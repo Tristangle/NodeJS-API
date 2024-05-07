@@ -7,6 +7,7 @@ import { compare, hash } from "bcrypt";
 import { sign } from "jsonwebtoken";
 import { Token } from "../database/entities/token";
 import { getRepository } from "typeorm";
+import { Role } from "../database/entities/roles";
 
 
 export const UserHandler = (app: express.Express) => {
@@ -21,12 +22,14 @@ export const UserHandler = (app: express.Express) => {
             const createUserRequest = userValidation.value;
             const hashedPassword = await hash(createUserRequest.password, 10);
             const userRepository = AppDataSource.getRepository(User);
+            // Ajouter le rôle de l'utilisateur automatiquement
             const user = await userRepository.save({
                 username: createUserRequest.username,
                 email: createUserRequest.email,
-                password: hashedPassword
+                password: hashedPassword,
+                role: 2
             });
-            res.status(201).send({id: user.id, email: user.email});
+            res.status(201).send({id: user.id, email: user.email, role: user.roles});
             return;
 
         } catch (error) {
@@ -57,7 +60,10 @@ export const UserHandler = (app: express.Express) => {
             }
             const secret = process.env.JWT_SECRET ?? ""
             console.log(secret)
-            const token = sign({ userId: user.id, username: user.username }, secret, { expiresIn: '1d' });
+            console.log(`le nom de l'utilisateur ${user.username}`);
+            console.log(`l'email de l'utilisateur ${user.email}`);
+            console.log(`le role de l'utilisateur ${user.roles}`);
+            const token = sign({ userId: user.id, username: user.username, roles: user.roles}, secret, { expiresIn: '1d' });
             await AppDataSource.getRepository(Token).save({ token: token, user: user })
             res.status(200).json({ token });
         } catch (error) {

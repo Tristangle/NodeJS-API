@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from "typeorm"
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinTable, ManyToOne } from "typeorm"
 import { Token } from "./token";
 import { Role } from "./roles";
 import "reflect-metadata"
@@ -21,7 +21,7 @@ export class User{
     @OneToMany(() => Token, token => token.user)
     tokens: Token[];
 
-    @ManyToMany(() => Role, roles => roles.user)
+    @ManyToOne(() => Role, roles => roles.user)
     @JoinTable()
     roles: Role[];
 

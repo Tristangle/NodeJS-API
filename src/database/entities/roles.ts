@@ -1,4 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "./user";
 
 
@@ -11,7 +11,7 @@ export class Role{
     @Column()
     name: String;
 
-    @ManyToMany(() => User, user => user.roles)@JoinTable()
+    @OneToMany(() => User, user => user.roles)@JoinTable()
         user: User[];
     
 

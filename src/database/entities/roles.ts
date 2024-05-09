@@ -11,9 +11,8 @@ export class Role{
     @Column()
     name: String;
 
-    @OneToMany(() => User, user => user.roles)@JoinTable()
-        user: User[];
-    
+    @OneToMany(() => User, user => user.roles)
+    user: User[];
 
     constructor(id: number, name: String, users: User[]) {
         this.id = id;

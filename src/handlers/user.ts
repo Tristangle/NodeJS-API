@@ -8,6 +8,7 @@ import { sign } from "jsonwebtoken";
 import { Token } from "../database/entities/token";
 import { getRepository } from "typeorm";
 import { Role } from "../database/entities/roles";
+import { authMiddleware } from "./middleware/auth-middleware";
 
 
 export const UserHandler = (app: express.Express) => {
@@ -62,9 +63,10 @@ export const UserHandler = (app: express.Express) => {
             console.log(secret)
             console.log(`le nom de l'utilisateur ${user.username}`);
             console.log(`l'email de l'utilisateur ${user.email}`);
-            console.log(`le role de l'utilisateur ${user.roles}`);
-            const token = sign({ userId: user.id, username: user.username, roles: user.roles}, secret, { expiresIn: '1d' });
+            console.log(`le role de l'utilisateur ${user.roles.id}`);
+            const token = sign({ userId: user.id, username: user.username, roles: user.roles.id}, secret, { expiresIn: '1d' });
             await AppDataSource.getRepository(Token).save({ token: token, user: user })
+            
             res.status(200).json({ token });
         } catch (error) {
 
@@ -73,14 +75,19 @@ export const UserHandler = (app: express.Express) => {
             return;
         }
     });
-    app.delete('/logout', async(req: Request, res: Response) => {
+    app.delete('/logout', authMiddleware, async(req: Request, res: Response) => {
         try {
-            // Delete la ligne avec le token dans la db
+            // Objectif : supprimer le token de l'utilisateur
+            // Définir le repository
+            const tokenRepository = AppDataSource.getRepository(Token);
+            const authToken = req.headers.authorization;
+            const token = authToken!.replace(/"/g, '').split(' ')[1];
+            await tokenRepository.delete({token: token})
             res.status(201).send({message : "Déconnexion réussie"});
            
         } catch (error) {
             console.log(error);
-            res.status(500).send({ "error": "internal error retry later" });
+            res.status(500).send({ "error": "pas connecté : internal error retry later" });
             return;
         }
     })

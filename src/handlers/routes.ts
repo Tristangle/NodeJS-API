@@ -6,9 +6,9 @@ import { generateValidationErrorMessage } from "./validators/generate-validation
 import { UserUsecase } from "../domain/user-usecase";
 import { AppDataSource } from "../database/database";
 import { SalleUsecase } from "../domain/salle-usecase";
-import { listSalleValidation, salleIdValidation, salleValidation, updateSalleValidation } from "./validators/salle-validator";
+import { listSalleValidation, planningSalleValidation, salleIdValidation, salleValidation, updateSalleValidation } from "./validators/salle-validator";
 import { Salle } from "../database/entities/salle";
-import { listSeanceValidation, seanceValidation } from "./validators/seance-validator";
+import { listSeanceValidation, planningSeanceValidation, seanceIdValidation, seanceValidation, updateSeanceValidation } from "./validators/seance-validator";
 import { Seance } from "../database/entities/seance";
 import { SeanceUsecase } from "../domain/seance-usecase";
 import { filmValidation,getByIdFilmValidation, getByTitleFilmValidation,deleteFilmValidation,updateFilmValidation,/*getFilmByTitleAndPeriod*/ } from "./validators/film-validator"; 
@@ -254,6 +254,31 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+    app.get("/salles/:id/planning", async (req: Request, res: Response) => {
+
+        const validation = planningSalleValidation.validate({...req.params, ...req.body})
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const planningSalleRequest = validation.value
+
+        try {
+            const salleUsecase = new SalleUsecase(AppDataSource);
+            const listeSalles= await salleUsecase.planningSeance(planningSalleRequest.id, {...planningSalleRequest})
+            if (listeSalles === null) {
+                res.status(404).send({"error": `not seances found`})
+                return
+            }
+            res.status(200).send(listeSalles)
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Internal error" })
+        }
+    })
+
     app.patch("/salles/:id", async (req: Request, res: Response) => {
 
         const validation = updateSalleValidation.validate({...req.params, ...req.body})
@@ -343,6 +368,7 @@ export const initRoutes = (app:express.Express) => {
             res.status(500).send((error as Error).message)
         }
     })
+
     app.get("/seances", async (req: Request, res: Response) => {
         const validation = listSeanceValidation.validate(req.query)
 
@@ -365,6 +391,81 @@ export const initRoutes = (app:express.Express) => {
         } catch (error) {   
             console.log(error) 
             res.status(500).send({ error: "Internal error" })
+        }
+    })
+
+    app.get("/seances/planning", async (req: Request, res: Response) => {
+
+        const validation = planningSeanceValidation.validate(req.body)
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const planningSalleRequest = validation.value
+
+        try {
+            const seanceUsecase = new SeanceUsecase(AppDataSource);
+            const listSeances= await seanceUsecase.planningSeance(planningSalleRequest)
+            if (listSeances === null) {
+                res.status(404).send({"error": `not seances found`})
+                return
+            }
+            res.status(200).send(listSeances)
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Internal error" })
+        }
+    })
+
+    app.delete("/seances/:id", async (req: Request, res: Response) => {
+        try {
+            const validationResult = seanceIdValidation.validate(req.params)
+
+            if (validationResult.error) {
+                res.status(400).send(generateValidationErrorMessage(validationResult.error.details))
+                return
+            }
+            const seanceId = validationResult.value
+
+            const seanceRepository = AppDataSource.getRepository(Seance)
+            const seance = await seanceRepository.findOneBy({ id: seanceId.id })
+            if (seance === null) {
+                res.status(404).send({ "error": `salle ${seanceId.id} not found` })
+                return
+            }
+
+            const salleDeleted = await seanceRepository.remove(seance)
+            res.status(200).send(salleDeleted)
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Internal error" })
+        }
+    })
+
+    app.patch("/seances/:id", async (req: Request, res: Response) => {
+        
+        const validation = updateSeanceValidation.validate({...req.params, ...req.body})
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const updateSeanceRequest = validation.value
+        console.log(updateSeanceRequest)
+        try {
+            const seanceUsecase = new SeanceUsecase(AppDataSource);
+            const updatedSeance = await seanceUsecase.updateSeance(updateSeanceRequest.id, { ...updateSeanceRequest })
+            if (updatedSeance === null) {
+                res.status(404).send({"error": `seance ${updateSeanceRequest.id} not found`})
+                return
+            }
+            res.status(200).send(updatedSeance)
+        } catch (error) {
+            console.log(error)
+            res.status(500).send((error as Error).message)
         }
     })
     UserHandler(app)

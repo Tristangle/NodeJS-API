@@ -48,3 +48,15 @@ export interface UpdateSalleRequest {
     name?: string
     inMaintenance?:boolean
 }
+
+export const planningSalleValidation = Joi.object<PlanningSalleRequest>({
+    id: Joi.number().required(),
+    dateDebut: Joi.date().required(),
+    dateFin: Joi.date().optional(),
+})
+
+export interface PlanningSalleRequest{
+    id: number
+    dateDebut: Date
+    dateFin?: Date
+}

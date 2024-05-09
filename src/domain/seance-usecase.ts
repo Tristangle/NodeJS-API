@@ -1,7 +1,7 @@
 import { DataSource } from "typeorm";
 import { Seance } from "../database/entities/seance";
 import { Salle } from "../database/entities/salle";
-import { SeanceRequest } from "../handlers/validators/seance-validator";
+import { PlanningSeanceRequest, SeanceRequest } from "../handlers/validators/seance-validator";
 import { Film } from "../database/entities/film";
 import {FilmUsecase} from "./film-usecase"
 import { addMinutes } from "date-fns";
@@ -12,10 +12,14 @@ export interface ListSeanceFilter {
 
 }
 
+export interface PlanningSeanceParams{
+    dateDebut: Date
+    dateFin?: Date
+}
 export interface UpdateSeanceParams {
     salle?: Salle
-    date?: Date
-    idFilm?: number
+    dateDebut?: Date
+    film?: Film
 }
 
 interface SeanceWithDateFin extends SeanceRequest {
@@ -34,21 +38,24 @@ export class SeanceUsecase{
         return dateFin
     }
 
-    async validSeance(seanceRequest:SeanceRequest){
+    async validSeance(seanceRequest:SeanceRequest, options: { ignoreSeanceId?: number } = {}){
         const repoSalle = this.db.getRepository(Salle)
-        const salle = repoSalle.findOneBy({id:seanceRequest.salle.id});
+        const salle = await repoSalle.findOneBy({id:seanceRequest.salle.id});
         if (!salle) {
             throw new Error("La salle spécifiée n'existe pas.");
         }
 
-        const repoFilm = this.db.getRepository(Film)
-        const film = repoSalle.findOneBy({id:seanceRequest.film.id});
-        if (!salle) {
+        const repoFilm =  this.db.getRepository(Film)
+        const film = await repoFilm.findOneBy({id:seanceRequest.film.id});
+        if (!film) {
             throw new Error("Le film spécifié n'existe pas.");
         }
        
         const simultaneCheck = this.db.createQueryBuilder(Seance, 'seance')
         simultaneCheck.andWhere('seance.filmId = :idFilm AND seance.dateDebut = :dateDebut',{idFilm:seanceRequest.film.id, dateDebut:seanceRequest.dateDebut})
+        if(options.ignoreSeanceId){
+            simultaneCheck.andWhere('seance.id <> :ignoreSeanceId',{ignoreSeanceId:options.ignoreSeanceId})
+        }
         const seancesIdem = await simultaneCheck.getExists()
         if (seancesIdem){
             throw new Error("Il existe deja une seance pour ce film à cette heure.")
@@ -61,6 +68,7 @@ export class SeanceUsecase{
             throw new Error("L'heure début de séance doit être après 9h.")
         }
 
+        //console.log(seanceRequest)
         const dateFin = await this.getDateFinSeance(seanceRequest);
         if (!dateFin) {
             throw new Error("Impossible de calculer la date de fin de la séance.(validation)");
@@ -68,14 +76,17 @@ export class SeanceUsecase{
 
         const query = this.db.createQueryBuilder(Seance, 'seance')
         query.andWhere('seance.salleId = :salleId',{salleId:seanceRequest.salle.id})
+        if(options.ignoreSeanceId){
+            query.andWhere('seance.id <> :ignoreSeanceId',{ignoreSeanceId:options.ignoreSeanceId})
+        }
         //query.orderBy('dateDebut')
         const seances = await query.getMany()
+        console.log(seances)
         if (seances.length>0){
-            let dateFinMax: Date = seances[0].dateFin;
             seances.forEach(seance => {
-                if ((seance.dateDebut < seanceRequest.dateDebut && seanceRequest.dateDebut < seance.dateFin) || (seanceRequest.dateDebut<seance.dateDebut && dateFin>seance.dateDebut   )) {
-                    throw new Error("La salle est déjà réservée pour une autre séance à cette heure.")
-                }
+                if (((seance.dateDebut < seanceRequest.dateDebut && seanceRequest.dateDebut < seance.dateFin)
+                     || (seanceRequest.dateDebut<seance.dateDebut && dateFin>seance.dateDebut))) {
+                        throw new Error(`La salle est déjà réservée pour une autre séance à cette heure : séance ${seance.id} de ${seance.dateDebut} à ${seance.dateFin}`);                }
             });
         }
 
@@ -111,20 +122,47 @@ export class SeanceUsecase{
         return seanceCreate
     }
 
-    async updateSeance(id: number, { salle, date, idFilm }: UpdateSeanceParams): Promise<Seance | null> {
+    async updateSeance(id: number, params: UpdateSeanceParams): Promise<Seance | null> {
         const repo = this.db.getRepository(Seance)
-        const Seancefound = await repo.findOneBy({ id })
-        if (Seancefound === null) return null
+        const seanceFound = await repo.findOneBy({ id })
+        if (seanceFound === null) return null
+        
+        //console.log(seanceFound.film)
+        const updateSeanceRequest: SeanceRequest = {
+            salle: params.salle ?? seanceFound.salle,
+            dateDebut: params.dateDebut ?? seanceFound.dateDebut,
+            film: params.film ?? seanceFound.film
+        };
 
-        if (salle) {
-            Seancefound.salle = salle
+        //console.log(updateSeanceRequest)
+        //await repo.softDelete(seanceFound);
+        try {
+            await this.validSeance(updateSeanceRequest, {ignoreSeanceId:seanceFound.id})
+        } catch (error) {
+            //await repo.restore(seanceFound);
+            throw new Error(`Validation error: ${(error as Error).message}`)
         }
-        if (date) {
-            Seancefound.dateDebut = date
+        
+        const dateFin = await this.getDateFinSeance(updateSeanceRequest)
+        if (!dateFin) {
+            throw new Error("Impossible de calculer la date de fin de la séance (update).")
         }
-
-        const SeanceUpdate = await repo.save(Seancefound)
-        return SeanceUpdate
+        Object.assign(seanceFound, params)
+        seanceFound.dateFin = dateFin
+        //console.log(seanceFound)
+        const updatedSeance = await repo.save(seanceFound)
+        return updatedSeance
+        
     }
+    async planningSeance(params: PlanningSeanceParams): Promise<{seances: Seance[]}> {
+        const query = this.db.createQueryBuilder(Seance, 'seance')
+        query.andWhere('seance.dateDebut >= :dateDebut',{dateDebut:params.dateDebut})
+        if(params.dateFin){
+            query.andWhere('seance.dateFin <= :dateFin',{dateFin:params.dateFin})
+        }
+        const listSeances = await query.getMany()
+        return {seances:listSeances}
+
+    }   
 
 }

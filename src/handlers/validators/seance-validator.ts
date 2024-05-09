@@ -39,12 +39,28 @@ export interface ListSeanceRequest {
 
 export const updateSeanceValidation = Joi.object<UpdateSeanceRequest>({
     id: Joi.number().required(),
+    salle: Joi.object<Salle>({
+        id: Joi.number(),
+    }).optional(),
     dateDebut: Joi.date().optional(),
-    idFilm: Joi.number().optional()
+    film: Joi.object<Salle>({
+        id: Joi.number(),
+    }).optional()
 })
 
 export interface UpdateSeanceRequest {
     id: number
     dateDebut?: Date
-    idFilm?:number
+    film?:Film
+    salle?:Salle
+}
+
+export const planningSeanceValidation = Joi.object<PlanningSeanceRequest>({
+    dateDebut: Joi.date().required(),
+    dateFin: Joi.date().optional(),
+})
+
+export interface PlanningSeanceRequest{
+    dateDebut:Date
+    dateFin?:Date
 }

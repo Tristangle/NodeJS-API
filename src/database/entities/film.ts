@@ -21,8 +21,6 @@ export class Film {
   @Column()
   author: string; 
 
-  
-
   @OneToMany(() => Seance, seances => seances.salle)
     seances: Seance[]
 

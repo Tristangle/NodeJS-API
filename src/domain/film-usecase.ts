@@ -7,8 +7,8 @@ export interface UpdateFilmParams {
     duration?:number
     genre?: string
     author?: string 
-    affectedRoom?: string
-    /*startDate?: number
+    /*affectedRoom?: string
+    startDate?: number
     endDate?: number*/
 }
 

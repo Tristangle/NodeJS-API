@@ -24,15 +24,6 @@ export class Film {
   @OneToMany(() => Seance, seances => seances.salle)
     seances: Seance[]
 
- /* 
- @Column()
-  affectedRoom:string;
-  
- @Column()
-  startDate:number;
-
-  @Column()
-  endDate:number*/
 
 constructor(id: number, title: string, description: string, duration: number,  genre: string, author: string, seances:Seance[] /*, affectedRoom:string, startDate: number, endDate:number*/) {
     this.id = id
@@ -41,9 +32,7 @@ constructor(id: number, title: string, description: string, duration: number,  g
     this.duration = duration
     this.genre = genre
     this.author = author
-    //this.affectedRoom = affectedRoom
     this.seances = seances
-    //this.startDate = startDate
-    //this.endDate = endDate
+
   }
 }

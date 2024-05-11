@@ -62,8 +62,6 @@ export class SeanceUsecase{
 
         }
 
-        
-
         if ( seanceRequest.dateDebut.getHours() <   9 ) {
             throw new Error("L'heure début de séance doit être après 9h.")
         }

@@ -47,16 +47,14 @@ export const initRoutes = (app:express.Express) => {
             res.status(400).send(generateValidationErrorMessage(validation.error.details));
             return;
         }
-    
+        
         const billetRequest = validation.value; 
-        const billetRepo = AppDataSource.getRepository(Billet)
         try {
-            const billetCreated = await billetRepo.save(
-                billetRequest
-            )
+            const billetUsecase = new BilletUsecase(AppDataSource)
+            const billetCreated = await billetUsecase.createBillets(billetRequest)
             res.status(201).send(billetCreated)
         } catch (error) {
-            res.status(500).send({ error: "Internal error" })
+            res.status(500).send((error as Error).message)
         }
     });
 
@@ -129,31 +127,6 @@ export const initRoutes = (app:express.Express) => {
             res.status(500).send({ error: "Internal error" }) 
         } 
     })
-    
-    /*app.get("/filmss/:title/:startDate/:endDate", async (req: Request, res: Response) => { 
-        const validation = getFilmByTitleAndPeriod.validate(req.params);
-    
-        if (validation.error) {
-            res.status(400).send(generateValidationErrorMessage(validation.error.details));
-            return;
-        }
-        
-        const { title, startDate, endDate } = validation.value;
-    
-        try {
-            const filmUsecase = new FilmUsecase(AppDataSource);
-    
-            const films = await filmUsecase.getFilmByTitleAndPeriod(title, parseInt(startDate), parseInt(endDate));
-            if (!films || films.length === 0) {
-                res.status(404).send({"error": `No films found for "${title}" between ${startDate} and ${endDate}`});
-                return;
-            }
-            res.status(200).send(films);
-        } catch (error) { 
-            console.log(error);
-            res.status(500).send({ error: "Internal error" }); 
-        } 
-    })*/
 
     // ICI Supp le double S quand le middleware fonctionne
     // Accessible pour les users authentifiés

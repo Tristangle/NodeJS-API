@@ -14,8 +14,52 @@ import { SeanceUsecase } from "../domain/seance-usecase";
 import { filmValidation,getByIdFilmValidation, getByTitleFilmValidation,deleteFilmValidation,updateFilmValidation,/*getFilmByTitleAndPeriod*/ } from "./validators/film-validator"; 
 import { FilmUsecase } from "../domain/film-usecase";
 import { Film } from "../database/entities/film";
+import { Billet } from "../database/entities/billet";
+import { BilletUsecase } from "../domain/billet-usecase";
+import { getBilletsByUserId, billetValidation } from "./validators/billet-validator"; 
 
 export const initRoutes = (app:express.Express) => {
+
+    app.get("/billet/:userId", async (req: Request, res: Response) => { 
+        try {
+            const userId = parseInt(req.params.userId, 10);
+            if (isNaN(userId)) {
+                return res.status(400).send({"error": "Invalid user ID"});
+            }
+    
+            const billetUsecase = new BilletUsecase(AppDataSource);
+            const billets = await billetUsecase.getBilletsByUserId(userId);
+    
+            if (billets.length === 0) {
+                return res.status(404).send({"error": "No tickets available for this user."});
+            }
+            res.status(200).send(billets);
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ error: "Internal error" });
+        }
+    });
+
+    app.post("/billets", async (req: Request, res: Response) => {
+        const validation = billetValidation.validate(req.body);
+        
+        if (validation.error) { 
+            res.status(400).send(generateValidationErrorMessage(validation.error.details));
+            return;
+        }
+    
+        const billetRequest = validation.value; 
+        const billetRepo = AppDataSource.getRepository(Billet)
+        try {
+            const billetCreated = await billetRepo.save(
+                billetRequest
+            )
+            res.status(201).send(billetCreated)
+        } catch (error) {
+            res.status(500).send({ error: "Internal error" })
+        }
+    });
+
     // Accessible pour tous les users
     app.get("/films", async (req: Request, res: Response) => { 
 

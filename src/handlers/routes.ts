@@ -82,15 +82,13 @@ export const initRoutes = (app:express.Express) => {
          res.status(500).send({ error: error.message });       
         }
     })
-    app.get("/billet/:userId", authMiddleware, async (req: Request, res: Response) => { 
+    app.get("/billet/perso", authMiddleware, async (req: Request, res: Response) => { 
         try {
-            const userId = parseInt(req.params.userId, 10);
-            if (isNaN(userId)) {
-                return res.status(400).send({"error": "Invalid user ID"});
-            }
+            const userId = getUserIdFromToken(req);
+            console.log(userId);
     
             const billetUsecase = new BilletUsecase(AppDataSource);
-            const billets = await billetUsecase.getBilletsByUserId(userId);
+            const billets = await billetUsecase.getBilletsByUserId(userId!);
     
             if (billets.length === 0) {
                 return res.status(404).send({"error": "No tickets available for this user."});

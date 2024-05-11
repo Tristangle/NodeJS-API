@@ -1,7 +1,6 @@
 {
   "name": "projet---api-nodejs",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "start:dev": "nodemon -e ts --exec ts-node src/index.ts"
@@ -11,6 +10,7 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "date-fns": "^3.6.0",
+    "dependencies": "^0.0.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "joi": "^17.12.2",
@@ -27,5 +27,6 @@
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.3"
-  }
+  },
+  "description": ""
 }

@@ -19,7 +19,7 @@ import { FilmUsecase } from "../domain/film-usecase";
 import { Film } from "../database/entities/film";
 import { Billet } from "../database/entities/billet";
 import { BilletUsecase } from "../domain/billet-usecase";
-import { getBilletsByUserId, billetValidation } from "./validators/billet-validator"; 
+import { getBilletsByUserId, billetValidation, frequentationValidation } from "./validators/billet-validator"; 
 
 
 export const initRoutes = (app:express.Express) => {
@@ -82,7 +82,7 @@ export const initRoutes = (app:express.Express) => {
          res.status(500).send({ error: error.message });       
         }
     })
-    app.get("/billet/:userId", authMiddleware, async (req: Request, res: Response) => { 
+    app.get("/billets/:userId", authMiddleware, async (req: Request, res: Response) => { 
         try {
             const userId = parseInt(req.params.userId, 10);
             if (isNaN(userId)) {
@@ -101,6 +101,27 @@ export const initRoutes = (app:express.Express) => {
             res.status(500).send({ error: "Internal error" });
         }
     });
+
+    app.get("/billets/frequentation", authMiddleware, async (req: Request, res: Response) => {
+
+        const validation = frequentationValidation.validate(req.body)
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const frequentationRequest = validation.value
+
+        try {
+            const billetUsecase = new BilletUsecase(AppDataSource);
+            const frequentation= await billetUsecase.getFrequentation(frequentationRequest)
+            res.status(200).send(frequentation)
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Internal error" })
+        }
+    })
 
     app.post("/billets", authMiddleware, async (req: Request, res: Response) => {
         const validation = billetValidation.validate(req.body);

@@ -8,7 +8,7 @@ import "reflect-metadata"
 export class User{
 
     @PrimaryGeneratedColumn()
-    id: number;
+    id: number; 
 
     @Column()
     username: string;

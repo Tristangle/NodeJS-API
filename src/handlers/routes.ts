@@ -23,6 +23,44 @@ import { getBilletsByUserId, billetValidation, frequentationValidation } from ".
 
 
 export const initRoutes = (app:express.Express) => {
+
+/**
+ * @openapi
+ * /users:
+ *   get:
+ *     summary: List of users
+ *     description: Retrieves a paginated list of users according to specified criteria.
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number to display.
+ *       - in: query
+ *         name: result
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of users per page.
+ *     responses:
+ *       200:
+ *         description: Successfully returned a list of users.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid query parameters.
+ *       500:
+ *         description: Internal server error.
+ */
     app.get('/users',authMiddleware, roleMiddleware, async(req: Request, res:Response)=>{
 
         const usersValidation = userListValidation.validate(req.body);
@@ -46,6 +84,35 @@ export const initRoutes = (app:express.Express) => {
             res.status(500).send({ error: "Internal error" })
         }
     });
+
+
+    /**
+ * @openapi
+ * /users/credit:
+ *   patch:
+ *     summary: Credit user's account
+ *     tags:
+ *       - User
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 description: Amount to be credited
+ *     responses:
+ *       200:
+ *         description: Credit added successfully
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Internal server error
+ */
     // Route pour crédit solde user
     app.patch('/users/credit', authMiddleware, async(req: Request, res: Response)=>{
        const creditValidation = creditUserValidation.validate(req.body);
@@ -64,6 +131,35 @@ export const initRoutes = (app:express.Express) => {
         res.status(500).send({error: "Internal error"});
        }
     })
+
+
+    /**
+ * @openapi
+ * /users/debit:
+ *   patch:
+ *     summary: Debit user's account
+ *     tags:
+ *       - User
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 description: Amount to be debited
+ *     responses:
+ *       200:
+ *         description: Debit processed successfully
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Internal server error
+ */
     // Route pour retirer solde user
     app.patch('/users/debit', authMiddleware, async(req: Request, res: Response)=>{
         const debitValidation = debitUserValidation.validate(req.body);
@@ -82,7 +178,32 @@ export const initRoutes = (app:express.Express) => {
          res.status(500).send({ error: error.message });       
         }
     })
-    app.get("/billets/perso", authMiddleware, async (req: Request, res: Response) => { 
+
+
+/**
+ * @openapi
+ * /billet/{userId}:
+ *   get:
+ *     summary: Retrieve a user's tickets
+ *     tags:
+ *       - Ticket
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Tickets retrieved successfully
+ *       404:
+ *         description: No tickets found for this user
+ *       500:
+ *         description: Internal server error
+ */
+    app.get("/billet/:userId", authMiddleware, async (req: Request, res: Response) => { 
         try {
             const userId = getUserIdFromToken(req);
             console.log(userId);
@@ -100,27 +221,31 @@ export const initRoutes = (app:express.Express) => {
         }
     });
 
-    app.get("/billets/frequentation", authMiddleware, async (req: Request, res: Response) => {
 
-        const validation = frequentationValidation.validate(req.body)
 
-        if (validation.error) {
-            res.status(400).send(generateValidationErrorMessage(validation.error.details))
-            return
-        }
-
-        const frequentationRequest = validation.value
-
-        try {
-            const billetUsecase = new BilletUsecase(AppDataSource);
-            const frequentation= await billetUsecase.getFrequentation(frequentationRequest)
-            res.status(200).send(frequentation)
-        } catch (error) {
-            console.log(error)
-            res.status(500).send({ error: "Internal error" })
-        }
-    })
-
+    /**
+ * @openapi
+ * /billets:
+ *   post:
+ *     summary: Create a new ticket
+ *     tags:
+ *       - Ticket
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Ticket'
+ *     responses:
+ *       201:
+ *         description: Ticket created successfully
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Internal server error
+ */
     app.post("/billets", authMiddleware, async (req: Request, res: Response) => {
         const validation = billetValidation.validate(req.body);
         
@@ -139,6 +264,31 @@ export const initRoutes = (app:express.Express) => {
         }
     });
 
+    /**
+ * @openapi
+ * /films:
+ *   get:
+ *     summary: Retrieve all films
+ *     description: Fetches a list of all films available in the database. Returns an error if no films are available.
+ *     tags:
+ *       - Film
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of films retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Film'
+ *       404:
+ *         description: No movies available.
+ *       500:
+ *         description: Internal server error due to a backend issue.
+ */
+
     // Accessible pour tous les users
     app.get("/films", authMiddleware, async (req: Request, res: Response) => { 
 
@@ -156,6 +306,31 @@ export const initRoutes = (app:express.Express) => {
             res.status(500).send({ error: "Internal error" }) 
         } 
     })
+
+    /**
+ * @openapi
+ * /films/{id}:
+ *   get:
+ *     summary: Retrieve a film by its ID
+ *     tags:
+ *       - Film
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Film retrieved successfully
+ *       404:
+ *         description: Film not found
+ *       500:
+ *         description: Internal server error
+ */
+
     // Accessible pour tous les users
     app.get("/films/:id", authMiddleware, async (req: Request, res: Response) => { 
         const validation = getByIdFilmValidation.validate(req.params)
@@ -182,6 +357,31 @@ export const initRoutes = (app:express.Express) => {
         } 
     })
 
+
+/**
+ * @openapi
+ * /films:
+ *   get:
+ *     summary: Retrieve all films accessible to authenticated users
+ *     description: Fetches a list of all films available to the authenticated user. If no films are available, a 404 is returned.
+ *     tags:
+ *       - Film
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of films retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Film'
+ *       404:
+ *         description: No movies available.
+ *       500:
+ *         description: Internal server error due to backend issues.
+ */
     // Accessible pour les users authentifiés
     app.get("/films",authMiddleware, async (req: Request, res: Response) => { 
 
@@ -200,6 +400,29 @@ export const initRoutes = (app:express.Express) => {
         } 
     })
 
+    /**
+ * @openapi
+ * /films:
+ *   post:
+ *     summary: Create a new film
+ *     tags:
+ *       - Film
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Film'
+ *     responses:
+ *       201:
+ *         description: Film created successfully
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Internal server error
+ */
     // Accessible pour les admins
     app.post("/films",authMiddleware,roleMiddleware,async (req: Request, res: Response) => {
         const validation = filmValidation.validate(req.body)
@@ -221,6 +444,30 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /films/{id}:
+ *   delete:
+ *     summary: Delete a film
+ *     tags:
+ *       - Film
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Film deleted successfully
+ *       404:
+ *         description: Film not found
+ *       500:
+ *         description: Internal server error
+ */
     // Accessible pour les admins
     app.delete("/films/:id",authMiddleware, roleMiddleware, async (req: Request, res: Response) => {
         const validation = deleteFilmValidation.validate(req.params)
@@ -247,6 +494,36 @@ export const initRoutes = (app:express.Express) => {
         
     })
     
+
+    /**
+ * @openapi
+ * /films/{id}:
+ *   patch:
+ *     summary: Update film details
+ *     tags:
+ *       - Film
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Film'
+ *     responses:
+ *       200:
+ *         description: Film updated successfully
+ *       404:
+ *         description: Film not found
+ *       500:
+ *         description: Internal server error
+ */
     // Accessible pour les admins
     app.patch("/films/:id", authMiddleware, roleMiddleware, async (req: Request, res: Response) => {
 
@@ -274,6 +551,31 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /seances:
+ *   get:
+ *     summary: List film sessions
+ *     tags:
+ *       - Seance
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Sessions listed successfully
+ *       500:
+ *         description: Internal server error
+ */
     app.get("/salles", authMiddleware, async (req: Request, res: Response) => {
         const validation = listSalleValidation.validate(req.query)
 
@@ -299,6 +601,33 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /salles/{id}/planning:
+ *   get:
+ *     summary: Get the planning for a specific room
+ *     tags:
+ *       - Room
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the room
+ *     responses:
+ *       200:
+ *         description: Planning retrieved successfully
+ *       404:
+ *         description: No seances found
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
     app.get("/salles/:id/planning", authMiddleware, async (req: Request, res: Response) => {
 
         const validation = planningSalleValidation.validate({...req.params, ...req.body})
@@ -324,6 +653,39 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /salles/{id}:
+ *   patch:
+ *     summary: Update room details
+ *     tags:
+ *       - Room
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the room to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Room'
+ *     responses:
+ *       200:
+ *         description: Room updated successfully
+ *       404:
+ *         description: Room not found
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Internal server error
+ */
     app.patch("/salles/:id", authMiddleware, roleMiddleware, async (req: Request, res: Response) => {
 
         const validation = updateSalleValidation.validate({...req.params, ...req.body})
@@ -349,6 +711,30 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /salles:
+ *   post:
+ *     summary: Create a new room
+ *     tags:
+ *       - Room
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Room'
+ *     responses:
+ *       201:
+ *         description: Room created successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
     app.post("/salles", authMiddleware, roleMiddleware, async (req: Request, res: Response) => {
         const validation = salleValidation.validate(req.body)
 
@@ -370,6 +756,33 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /salles/{id}:
+ *   delete:
+ *     summary: Delete a room
+ *     tags:
+ *       - Room
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the room to delete
+ *     responses:
+ *       200:
+ *         description: Room deleted successfully
+ *       404:
+ *         description: Room not found
+ *       400:
+ *         description: Invalid request
+ *       500:
+ *         description: Internal server error
+ */
     app.delete("/salles/:id", authMiddleware, roleMiddleware, async (req: Request, res: Response) => {
         try {
             const validationResult = salleIdValidation.validate(req.params)
@@ -395,6 +808,30 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /seances:
+ *   post:
+ *     summary: Schedule a new seance
+ *     tags:
+ *       - Seance
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Seance'
+ *     responses:
+ *       201:
+ *         description: Seance created successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
     app.post("/seances", authMiddleware, roleMiddleware, async (req: Request, res: Response) => {
 
         const validation = seanceValidation.validate(req.body)
@@ -414,6 +851,34 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+    /**
+ * @openapi
+ * /seances:
+ *   get:
+ *     summary: List all seances
+ *     tags:
+ *       - Seance
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of seances per page
+ *     responses:
+ *       200:
+ *         description: List of seances retrieved successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
     app.get("/seances", authMiddleware, async (req: Request, res: Response) => {
         const validation = listSeanceValidation.validate(req.query)
 
@@ -439,6 +904,25 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+    /**
+ * @openapi
+ * /seances/planning:
+ *   get:
+ *     summary: Get the planning for seances
+ *     tags:
+ *       - Seance
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Planning retrieved successfully
+ *       404:
+ *         description: No seances found
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
     app.get("/seances/planning", authMiddleware, async (req: Request, res: Response) => {
 
         const validation = planningSeanceValidation.validate(req.body)
@@ -464,6 +948,33 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /seances/{id}:
+ *   delete:
+ *     summary: Delete a seance
+ *     tags:
+ *       - Seance
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the seance to delete
+ *     responses:
+ *       200:
+ *         description: Seance deleted successfully
+ *       404:
+ *         description: Seance not found
+ *       400:
+ *         description: Invalid request
+ *       500:
+ *         description: Internal server error
+ */
     app.delete("/seances/:id", authMiddleware, roleMiddleware, async (req: Request, res: Response) => {
         try {
             const validationResult = seanceIdValidation.validate(req.params)
@@ -489,6 +1000,39 @@ export const initRoutes = (app:express.Express) => {
         }
     })
 
+
+    /**
+ * @openapi
+ * /seances/{id}:
+ *   patch:
+ *     summary: Update a seance
+ *     tags:
+ *       - Seance
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The ID of the seance to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Seance'
+ *     responses:
+ *       200:
+ *         description: Seance updated successfully
+ *       404:
+ *         description: Seance not found
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Internal server error
+ */
     app.patch("/seances/:id", authMiddleware, roleMiddleware, async (req: Request, res: Response) => {
         
         const validation = updateSeanceValidation.validate({...req.params, ...req.body})

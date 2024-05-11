@@ -131,6 +131,94 @@ export const initRoutes = (app:express.Express) => {
         res.status(500).send({error: "Internal error"});
        }
     })
+    /**
+ 
+@openapi
+/billets/perso:
+get:
+summary: Retrieve personal tickets
+description: Fetches all tickets associated with the authenticated user.
+tags:
+Tickets
+security:
+bearerAuth: []
+responses:
+200:
+description: Successfully retrieved the tickets for the user.
+content:
+application/json:
+schema:
+type: array
+items:
+$ref: '#/components/schemas/Ticket'
+404:
+description: No tickets available for this user.
+500:
+description: Internal server error.
+*/
+    app.get("/billets/perso", authMiddleware, async (req: Request, res: Response) => { 
+        try {
+            const userId = getUserIdFromToken(req);
+            console.log(userId);
+
+            const billetUsecase = new BilletUsecase(AppDataSource);
+            const billets = await billetUsecase.getBilletsByUserId(userId!);
+
+            if (billets.length === 0) {
+                return res.status(404).send({"error": "No tickets available for this user."});
+            }
+            res.status(200).send(billets);
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ error: "Internal error" });
+        }
+    });
+    /**
+ 
+@openapi
+/billets/frequentation:
+get:
+summary: Retrieve attendance information
+description: Fetches attendance information based on the specified criteria. Validates the request body to ensure it contains valid data for querying attendance.
+tags:
+Tickets
+security:
+bearerAuth: []
+requestBody:
+required: true
+content:
+application/json:
+schema:
+$ref: '#/components/schemas/FrequentationRequest'
+responses:
+200:
+description: Successfully retrieved attendance information.
+400:
+description: Validation error with input data.
+500:
+description: Internal server error.
+*/
+
+    app.get("/billets/frequentation", authMiddleware, async (req: Request, res: Response) => {
+
+        const validation = frequentationValidation.validate(req.body)
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const frequentationRequest = validation.value
+
+        try {
+            const billetUsecase = new BilletUsecase(AppDataSource);
+            const frequentation= await billetUsecase.getFrequentation(frequentationRequest)
+            res.status(200).send(frequentation)
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Internal error" })
+        }
+    })
 
 
     /**
@@ -178,50 +266,6 @@ export const initRoutes = (app:express.Express) => {
          res.status(500).send({ error: error.message });       
         }
     })
-
-
-/**
- * @openapi
- * /billet/{userId}:
- *   get:
- *     summary: Retrieve a user's tickets
- *     tags:
- *       - Ticket
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Tickets retrieved successfully
- *       404:
- *         description: No tickets found for this user
- *       500:
- *         description: Internal server error
- */
-    app.get("/billet/:userId", authMiddleware, async (req: Request, res: Response) => { 
-        try {
-            const userId = getUserIdFromToken(req);
-            console.log(userId);
-    
-            const billetUsecase = new BilletUsecase(AppDataSource);
-            const billets = await billetUsecase.getBilletsByUserId(userId!);
-    
-            if (billets.length === 0) {
-                return res.status(404).send({"error": "No tickets available for this user."});
-            }
-            res.status(200).send(billets);
-        } catch (error) {
-            console.error(error);
-            res.status(500).send({ error: "Internal error" });
-        }
-    });
-
-
 
     /**
  * @openapi

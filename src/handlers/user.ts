@@ -28,7 +28,8 @@ export const UserHandler = (app: express.Express) => {
                 username: createUserRequest.username,
                 email: createUserRequest.email,
                 password: hashedPassword,
-                role: 2
+                role: 2,
+                solde: 0
             });
             res.status(201).send({id: user.id, email: user.email, role: user.roles});
             return;

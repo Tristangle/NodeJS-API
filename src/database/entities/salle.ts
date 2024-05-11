@@ -8,7 +8,16 @@ export class Salle{
     id: number
 
     @Column()
-    name: String
+    name: string
+
+    @Column()
+    description: string
+
+    @Column()
+    type: string
+
+    @Column()
+    image: string
 
     @Column()
     capacity: number
@@ -19,11 +28,14 @@ export class Salle{
     @OneToMany(() => Seance, seances => seances.salle)
     seances: Seance[]
     
-    constructor(id: number, name: String, capacity:number, inMaintenance:boolean, seances:Seance[]) {
+    constructor(id: number, name: string, capacity:number, inMaintenance:boolean, seances:Seance[], description: string, type: string, image: string) {
         this.id = id
         this.name = name
         this.capacity = capacity
         this.inMaintenance = inMaintenance
         this.seances = seances
+        this.description = description
+        this.type = type
+        this.image = image
     }
 }

@@ -12,6 +12,9 @@ export interface ListSalleFilter {
 export interface UpdateSalleParams {
     name?: string
     inMaintenance?:boolean
+    description?: string
+    type?: string
+    image?: string
 }
 
 export interface PlanningSalleParams{
@@ -28,7 +31,7 @@ export class SalleUsecase{
         return {salle:listeSalle};
     }
 
-    async updateSalle(id: number, { name, inMaintenance }: UpdateSalleParams): Promise<Salle | null> {
+    async updateSalle(id: number, { name, inMaintenance, description, type, image  }: UpdateSalleParams): Promise<Salle | null> {
         const repo = this.db.getRepository(Salle)
         const sallefound = await repo.findOneBy({ id })
         if (sallefound === null) return null
@@ -38,6 +41,15 @@ export class SalleUsecase{
         }
         if (inMaintenance) {
             sallefound.inMaintenance = inMaintenance
+        }
+        if (description) {
+            sallefound.description = description
+        }
+        if (type) {
+            sallefound.type = type
+        }
+        if (image) {
+            sallefound.image = image
         }
 
         const salleUpdate = await repo.save(sallefound)

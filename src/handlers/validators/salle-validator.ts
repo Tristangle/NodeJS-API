@@ -4,17 +4,31 @@ export interface SalleRequest{
     name:string,
     capacity:number,
     inMaintenance:boolean,
+    description: string, 
+    type: string, 
+    image: string
 }
 
 export const salleValidation = Joi.object<SalleRequest>({
     name: Joi.string()
-        .required(),
+        .required()
+        .min(1),
     capacity: Joi.number()
         .min(15)
         .max(30)
         .required(),
     inMaintenance: Joi.boolean()
+        .required(),
+    description: Joi.string()
         .required()
+        .min(1),
+    type: Joi.string()
+        .required()
+        .min(1),
+    image: Joi.string()
+        .uri()
+        .required(),
+    
 
 }).options({ abortEarly: false })
 
@@ -40,13 +54,24 @@ export const salleIdValidation = Joi.object<SalleIdRequest>({
 export const updateSalleValidation = Joi.object<UpdateSalleRequest>({
     id: Joi.number().required(),
     name: Joi.string().min(1).optional(),
-    inMaintenance: Joi.boolean().optional()
+    inMaintenance: Joi.boolean().optional(),
+    description: Joi.string()
+        .optional(),
+    type: Joi.string()
+        .optional(),
+    image: Joi.string()
+        .uri()
+        .optional(),
 })
 
 export interface UpdateSalleRequest {
     id: number
     name?: string
     inMaintenance?:boolean
+    description?: string, 
+    type?: string, 
+    image?: string
+    
 }
 
 export const planningSalleValidation = Joi.object<PlanningSalleRequest>({

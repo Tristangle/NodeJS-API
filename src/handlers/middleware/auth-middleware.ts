@@ -9,7 +9,6 @@ export const authMiddleware = async(req: Request, res: Response, next: NextFunct
     // Récupérer la valeur du token donné
     const tokenRepository = AppDataSource.getRepository(Token);
     const authToken = req.headers.authorization;
-    console.log(authToken);
     
         // Vérifier si le token est null ou vide
         if(!authToken){

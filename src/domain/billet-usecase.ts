@@ -59,23 +59,36 @@ export class BilletUsecase {
         let occupancyRates = new Map();
         for (const day of days) {
             const query = this.db.createQueryBuilder(Seance, 'seance');
-            query.andWhere('seance.dateDebut >= :dateDebut', { dateDebut: day });
-            if (range.dateFin) {
-                query.andWhere('seance.dateFin < :dateFin', { dateFin: addDays(day, 1) });
-            }
+            const lendemain = addDays(day,1)
+            query.andWhere('seance.dateDebut BETWEEN :dateDebut AND :dateFin', { dateDebut: day, dateFin: lendemain })
+            .leftJoinAndSelect('seance.salle', 'salle');
+       
+            //query.andWhere('seance.dateFin < :dateFin', { dateFin: lendemain});            
             const listSeances = await query.getMany();
+            if (listSeances.length == 0){
+              //  throw new Error("Aucune seances trouvées pour cette periode")
+            }
             let billetsTotal = 0;
             let placesTotal = 0;
-            
+            console.log(listSeances);
             for (const seance of listSeances) {
                 const queryBillets = this.db.createQueryBuilder(Billet, 'billet');
                 queryBillets.andWhere('billet.seanceId = :seanceId', { seanceId: seance.id });
                 const billetsCount = await queryBillets.getCount();
                 billetsTotal += billetsCount;
-                placesTotal += seance.salle.capacity;
+
+                const querySalle = this.db.createQueryBuilder(Salle, 'salle');
+                querySalle.andWhere('salle.id = :seanceSalleId', { seanceSalleId: seance.salle.id });
+                const salle = await querySalle.getOne();
+                if (salle){
+                    placesTotal += salle.capacity;
+                }
+                
             }
-            const occupancyRate = billetsTotal / placesTotal;
-            occupancyRates.set(day, occupancyRate);
+            if (placesTotal!=0){
+                const occupancyRate = (billetsTotal / placesTotal)*100;
+                occupancyRates.set(day, occupancyRate);
+            }
 
         }
         let message = ""
